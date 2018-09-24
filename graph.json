@@ -1,5 +1,7 @@
 {
 	"entrance": [
+		"ND.edit.edit",
+
 		"ND.cmate0",
 		"ND.cmate0auto",
 		"ND.do",
@@ -31,6 +33,12 @@
 		"ND.usi.usi"
 	],
 	"nodes" : [
+		{
+			"label": "ND.edit.edit",
+			"token": "edit",
+			"fn": "do_edit"
+		},
+
 		{
 			"label": "#else",
 			"fn": "do_other"

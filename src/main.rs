@@ -5,22 +5,51 @@
 /// ```
 extern crate kifuwarabe_shell;
 use kifuwarabe_shell::graph::*;
+use kifuwarabe_shell::shell::*;
 use std::collections::HashSet;
+
+mod editor_impl;
+use editor_impl::*;
+
 
 const GRAPH_JSON_FILE: &str = "graph.json";
 
+#[allow(dead_code)]
+const BLACK: &str = "\u{001b}[30m";
+#[allow(dead_code)]
+const RED: &str = "\u{001b}[31m";
+#[allow(dead_code)]
+const GREEN: &str = "\u{001b}[32m";
+#[allow(dead_code)]
+const YELLOW: &str = "\u{001b}[33m";
+#[allow(dead_code)]
+const BLUE: &str = "\u{001b}[34m";
+#[allow(dead_code)]
+const MAGENTA: &str = "\u{001b}[35m";
+#[allow(dead_code)]
+const CYAN: &str = "\u{001b}[36m";
+#[allow(dead_code)]
+const WHITE: &str = "\u{001b}[37m";
+#[allow(dead_code)]
+const RESET: &str = "\u{001b}[0m";
+
 // 任意のオブジェクト。
 pub struct ShellVar {}
+impl ShellVar {
+    fn new() -> ShellVar {
+        ShellVar {}
+    }
+}
 
 pub fn make_indent(len: &mut i32, s: &mut String) {
-    *len = *len + 4;
+    *len += 4;
     s.clear();
     for _i in 0..*len {
         s.push_str(" ");
     }
 }
 pub fn unmake_indent(len: &mut i32, s: &mut String) {
-    *len = *len - 4;
+    *len -= 4;
     s.clear();
     for _i in 0..*len {
         s.push_str(" ");
@@ -41,12 +70,13 @@ pub fn expand_exits_map(
         for (exits_label, exits_vec) in node.get_exits_map().iter() {
             println!("{}| {}", s, exits_label);
             for exits_item in exits_vec.iter() {
+                let exist_node = graph.get_node(exits_item);
                 if principal.contains(exits_item) {
-                    println!("{}+----|LOOP| {}", s, exits_item);
+                    println!("{}+----|LOOP| {}    {}{}{}", s, exits_item, GREEN, exist_node.get_token(), RESET);
                 // 循環参照を止める。
                 } else {
                     principal.insert(exits_item.to_string());
-                    println!("{}+-- {}", s, exits_item);
+                    println!("{}+-- {}    {}{}{}", s, exits_item, GREEN, exist_node.get_token(), RESET);
                     expand_exits_map(&graph, principal, indent_len, s, exits_item, depth-1);
                 }
             }
@@ -55,13 +85,9 @@ pub fn expand_exits_map(
     }
 }
 
-fn main() {
-    println!("Hello, world!");
-
-    // グラフの作成。
-    let mut graph: Graph<ShellVar> = Graph::new();
-
-    // ファイルからグラフのノード構成を読取。
+/// グラフ ファイル読込。
+fn read_contents_graph(graph: &mut Graph<ShellVar>) {
+    // グラフのノード構成を読取。
     graph.read_graph_file(GRAPH_JSON_FILE.to_string());
 
     // 内容確認出力。
@@ -77,14 +103,15 @@ fn main() {
         println!("entrance");
         make_indent(&mut indent_len, &mut s);
         for node_label in graph.get_entrance_vec().iter() {
+            let node = graph.get_node(node_label);
             if principal.contains(node_label) {
                 println!("{}|", s);
-                println!("{}+----|LOOP| {}", s, node_label);
+                println!("{}+----|LOOP| {}    {}{}{}", s, node_label, GREEN, node.get_token(), RESET);
             // 循環参照を止める。
             } else {
                 principal.insert(node_label.to_string());
                 println!("{}|", s);
-                println!("{}+-- {}", s, node_label);
+                println!("{}+-- {}    {}{}{}", s, node_label, GREEN, node.get_token(), RESET);
 
                 expand_exits_map(
                     &graph,
@@ -96,18 +123,27 @@ fn main() {
                 );
             }
         }
-
-        /*
-        println!("nodes");
-        for (node_label, node) in graph.get_node_map().iter() {
-            println!("  - {} {}", node_label, node.get_token());
-            for (exits_label, exits_vec) in node.get_exits_map().iter() {
-                println!("    - {}", exits_label);
-                for exits_item in exits_vec.iter() {
-                    println!("      - {}", exits_item);
-                }
-            }
-        }
-        */
     }
+}
+
+fn main() {
+    // グラフの作成。
+    let mut graph: Graph<ShellVar> = Graph::new();
+    // コントローラーを登録。
+    graph.insert_fn("do_edit", do_edit);
+    graph.insert_fn("do_reload", do_reload);
+
+    // グラフ ファイル読込。
+    read_contents_graph(&mut graph);
+
+    // 任意のオブジェクト。
+    let mut shell_var = ShellVar::new();
+    // シェルの作成。
+    let mut shell = Shell::new();
+
+    // 実行。
+    println!("Please enter command.");
+    shell.run(&graph, &mut shell_var);
+    println!("Finished.");
+
 }
