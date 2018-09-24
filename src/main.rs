@@ -26,17 +26,35 @@ pub fn unmake_indent(len: &mut i32, s: &mut String) {
     }
 }
 
-pub fn make_exits_map(graph: &Graph<ShellVar>, indent_len: &mut i32, s: &mut String, node_label: &str) {
-    make_indent(indent_len, s);
-    let node = graph.get_node(node_label);
-    for (exits_label, exits_vec) in node.get_exits_map().iter() {
-        println!("{}| {}", s, exits_label);
-        for exits_item in exits_vec.iter() {
-            println!("{}+---- {}", s, exits_item);
+pub fn expand_exits_map(
+    graph: &Graph<ShellVar>,
+    indent_len: &mut i32,
+    s: &mut String,
+    node_label: &str,
+    depth: i32,
+) {
+    if 0 < depth {
+        make_indent(indent_len, s);
+        let node = graph.get_node(node_label);
+        for (exits_label, exits_vec) in node.get_exits_map().iter() {
+            println!("{}| {}", s, exits_label);
+            for exits_item in exits_vec.iter() {
+                make_node_label(&graph, indent_len, s, exits_item, depth-1);
+            }
         }
-    }
 
-    unmake_indent(indent_len, s);
+        unmake_indent(indent_len, s);
+    }
+}
+pub fn make_node_label(
+    graph: &Graph<ShellVar>,
+    indent_len: &mut i32,
+    s: &mut String,
+    exits_item: &str,
+    depth: i32,
+) {
+    println!("{}+-- {}", s, exits_item);
+    expand_exits_map(&graph, indent_len, s, exits_item, depth);
 }
 
 fn main() {
@@ -52,6 +70,7 @@ fn main() {
     {
         let mut s = "".to_string();
         let mut indent_len = 0;
+        let max_depth = 10;
 
         println!("entrance");
         make_indent(&mut indent_len, &mut s);
@@ -59,7 +78,7 @@ fn main() {
             println!("{}|", s);
             println!("{}+-- {}", s, node_label);
 
-            make_exits_map(&graph, &mut indent_len, &mut s, node_label);
+            expand_exits_map(&graph, &mut indent_len, &mut s, node_label, max_depth);
         }
 
         /*
