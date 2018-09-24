@@ -41,28 +41,17 @@ pub fn expand_exits_map(
         for (exits_label, exits_vec) in node.get_exits_map().iter() {
             println!("{}| {}", s, exits_label);
             for exits_item in exits_vec.iter() {
-                make_node_label(&graph, principal, indent_len, s, exits_item, depth - 1);
+                if principal.contains(exits_item) {
+                    println!("{}+----|LOOP| {}", s, exits_item);
+                // 循環参照を止める。
+                } else {
+                    principal.insert(exits_item.to_string());
+                    println!("{}+-- {}", s, exits_item);
+                    expand_exits_map(&graph, principal, indent_len, s, exits_item, depth-1);
+                }
             }
         }
-
         unmake_indent(indent_len, s);
-    }
-}
-pub fn make_node_label(
-    graph: &Graph<ShellVar>,
-    principal: &mut HashSet<String>,
-    indent_len: &mut i32,
-    s: &mut String,
-    node_label: &str,
-    depth: i32,
-) {
-    if principal.contains(node_label) {
-        println!("{}+----|LOOP| {}", s, node_label);
-    // 循環参照を止める。
-    } else {
-        principal.insert(node_label.to_string());
-        println!("{}+-- {}", s, node_label);
-        expand_exits_map(&graph, principal, indent_len, s, node_label, depth);
     }
 }
 
