@@ -1,0 +1,11 @@
+[package]
+name = "rust_kifuwarabe_shell_visualizer"
+version = "0.1.0"
+authors = ["むずでょ <muzudho1@gmail.com>"]
+
+[dependencies]
+serde_json = "1.0"
+
+[dependencies.kifuwarabe_shell]
+git = "https://github.com/muzudho/rust_kifuwarabe_shell.git"
+rev = "3344083f19ee64171dc90031b96fc8679c6b31c5"
