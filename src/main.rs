@@ -5,6 +5,7 @@
 /// ```
 extern crate kifuwarabe_shell;
 use kifuwarabe_shell::graph::*;
+use std::collections::HashSet;
 
 const GRAPH_JSON_FILE: &str = "graph.json";
 
@@ -28,6 +29,7 @@ pub fn unmake_indent(len: &mut i32, s: &mut String) {
 
 pub fn expand_exits_map(
     graph: &Graph<ShellVar>,
+    principal: &mut HashSet<String>,
     indent_len: &mut i32,
     s: &mut String,
     node_label: &str,
@@ -39,7 +41,7 @@ pub fn expand_exits_map(
         for (exits_label, exits_vec) in node.get_exits_map().iter() {
             println!("{}| {}", s, exits_label);
             for exits_item in exits_vec.iter() {
-                make_node_label(&graph, indent_len, s, exits_item, depth-1);
+                make_node_label(&graph, principal, indent_len, s, exits_item, depth - 1);
             }
         }
 
@@ -48,13 +50,20 @@ pub fn expand_exits_map(
 }
 pub fn make_node_label(
     graph: &Graph<ShellVar>,
+    principal: &mut HashSet<String>,
     indent_len: &mut i32,
     s: &mut String,
-    exits_item: &str,
+    node_label: &str,
     depth: i32,
 ) {
-    println!("{}+-- {}", s, exits_item);
-    expand_exits_map(&graph, indent_len, s, exits_item, depth);
+    if principal.contains(node_label) {
+        println!("{}+----|LOOP| {}", s, node_label);
+    // 循環参照を止める。
+    } else {
+        principal.insert(node_label.to_string());
+        println!("{}+-- {}", s, node_label);
+        expand_exits_map(&graph, principal, indent_len, s, node_label, depth);
+    }
 }
 
 fn main() {
@@ -68,17 +77,35 @@ fn main() {
 
     // 内容確認出力。
     {
+        // 循環参照防止のため。
+        let mut principal: HashSet<String> = HashSet::new();
+        // 循環参照防止のため。
+        let max_depth = 20;
+
         let mut s = "".to_string();
         let mut indent_len = 0;
-        let max_depth = 10;
 
         println!("entrance");
         make_indent(&mut indent_len, &mut s);
         for node_label in graph.get_entrance_vec().iter() {
-            println!("{}|", s);
-            println!("{}+-- {}", s, node_label);
+            if principal.contains(node_label) {
+                println!("{}|", s);
+                println!("{}+----|LOOP| {}", s, node_label);
+            // 循環参照を止める。
+            } else {
+                principal.insert(node_label.to_string());
+                println!("{}|", s);
+                println!("{}+-- {}", s, node_label);
 
-            expand_exits_map(&graph, &mut indent_len, &mut s, node_label, max_depth);
+                expand_exits_map(
+                    &graph,
+                    &mut principal,
+                    &mut indent_len,
+                    &mut s,
+                    node_label,
+                    max_depth,
+                );
+            }
         }
 
         /*
