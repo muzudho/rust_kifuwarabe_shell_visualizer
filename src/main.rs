@@ -34,10 +34,15 @@ const WHITE: &str = "\u{001b}[37m";
 const RESET: &str = "\u{001b}[0m";
 
 // 任意のオブジェクト。
-pub struct ShellVar {}
+pub struct ShellVar {
+    /// ノードラベルを一時的に記憶。
+    pub node_label: String
+}
 impl ShellVar {
     fn new() -> ShellVar {
-        ShellVar {}
+        ShellVar {
+            node_label: "".to_string()
+        }
     }
 }
 
@@ -130,8 +135,14 @@ fn main() {
     // グラフの作成。
     let mut graph: Graph<ShellVar> = Graph::new();
     // コントローラーを登録。
-    graph.insert_fn("do_edit", do_edit);
+    // [E]
+    graph.insert_fn("do_edit_add", do_edit_add);
+    graph.insert_fn("do_edit_nodelabelvar", do_edit_nodelabelvar);
+    // [R]
     graph.insert_fn("do_reload", do_reload);
+    // [S]
+    graph.insert_fn("do_edit_save", do_edit_save);
+    
 
     // グラフ ファイル読込。
     read_contents_graph(&mut graph);
